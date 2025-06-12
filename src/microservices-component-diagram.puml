@@ -1,0 +1,52 @@
+@startuml
+
+User as user
+
+package "UI" {
+    component [Mobile App] as mobile_app
+    component [Web UI] as web_ui
+    user <--> mobile_app
+    user <--> web_ui
+}
+
+node "Application Server" {
+    package "Service Manager" {
+        interface "ManagerAPI" as manager_api
+        component [Internals] as service_manager_internals
+        manager_api - service_manager_internals
+        mobile_app --> manager_api
+        web_ui --> manager_api
+        service_manager_internals --> mobile_app
+        service_manager_internals --> web_ui
+    }
+
+    package "Scheduler Service" {
+        interface "Scheduler API" as scheduler_api
+        component [Internals] as scheduler_internals
+        scheduler_api - scheduler_internals
+        service_manager_internals --> scheduler_api
+        scheduler_internals --> manager_api
+    }
+
+    package "Report Generation Service" {
+        interface "Reports API" as reports_api
+        component [Internals] as reports_internals
+        reports_api - reports_internals
+        service_manager_internals --> reports_api
+        reports_internals --> manager_api
+    }
+
+    package "Messaging Service" {
+        interface "Messaging API" as messaging_api
+        component [Internals] as messaging_internals
+        messaging_api - messaging_internals
+        service_manager_internals --> messaging_api
+        messaging_internals --> manager_api
+    }
+}
+
+cloud Twilio {
+    interface "Twilio API" as twilio
+    messaging_internals <--> twilio
+}
+@enduml
