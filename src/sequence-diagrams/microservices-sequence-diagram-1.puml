@@ -1,6 +1,9 @@
 @startuml
 !pragma teoz true
 
+/'Defines the protocol when a user submits a request to create and execute a test immediately'/
+/'author: Luvai Cutlerywala <luvaidc@gmail.com>'/
+
 /'Define the actors and participants.'/
 actor User as user
 
