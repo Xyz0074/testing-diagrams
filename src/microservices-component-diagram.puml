@@ -1,52 +1,67 @@
 @startuml
 
+/'Defines all the components in the diagram, including the actor.'/
 User as user
 
-package "UI" {
-    component [Mobile App] as mobile_app
-    component [Web UI] as web_ui
-    user <--> mobile_app
-    user <--> web_ui
+package UI {
+    component "Web UI" as web_ui
+    component "Mobile App" as mobile_app
 }
 
 node "Application Server" {
-    package "Service Manager" {
-        interface "ManagerAPI" as manager_api
-        component [Internals] as service_manager_internals
-        manager_api - service_manager_internals
-        mobile_app --> manager_api
-        web_ui --> manager_api
-        service_manager_internals --> mobile_app
-        service_manager_internals --> web_ui
+    component "Service Manager" as service_manager
+
+    package "Listener" {
+        queue "Listener Queue" as listener_queue
+        component "Listener" as listener
     }
 
-    package "Scheduler Service" {
-        interface "Scheduler API" as scheduler_api
-        component [Internals] as scheduler_internals
-        scheduler_api - scheduler_internals
-        service_manager_internals --> scheduler_api
-        scheduler_internals --> manager_api
-    }
-
-    package "Report Generation Service" {
-        interface "Reports API" as reports_api
-        component [Internals] as reports_internals
-        reports_api - reports_internals
-        service_manager_internals --> reports_api
-        reports_internals --> manager_api
-    }
-
-    package "Messaging Service" {
-        interface "Messaging API" as messaging_api
-        component [Internals] as messaging_internals
-        messaging_api - messaging_internals
-        service_manager_internals --> messaging_api
-        messaging_internals --> manager_api
-    }
+    component "Deliverability Test Log Service" as dtl_service
+    component "Deliverability Test Service" as dt_service
+    component "Deliverability Test Phones Service" as dtp_service
+    component "Report Generation Service" as rg_service
+    component "Scheduler" as scheduler
+    component "Messaging Service" as messenger
 }
 
-cloud Twilio {
-    interface "Twilio API" as twilio
-    messaging_internals <--> twilio
+cloud "Broker API" {
+    interface "Bandwidth API" as bandwidth
 }
+
+database Database {
+    skinparam componentStyle rectangle
+    component "Deliverability Test Log" as dtl
+    component "Deliverability Test" as dt
+    component "Deliverability Test Phones" as dtp
+    skinparam componentStyle uml2
+}
+
+/'Defines the interactions between the components in the diagram.'/
+/'Frontend Interactions'/
+user -- web_ui
+user -- mobile_app
+web_ui -- service_manager
+mobile_app -- service_manager
+web_ui -- dtp_service
+mobile_app -- dtp_service
+
+/'Backend Interactions'/
+service_manager -- listener_queue
+listener_queue -- listener
+listener -- service_manager
+service_manager -- dt_service
+service_manager -- dtl_service
+service_manager -- rg_service
+scheduler -- service_manager
+service_manager -- messenger
+
+/'Database Interactions'/
+listener -- dtl
+scheduler -- dtl
+dtp_service -- dtp
+dtl_service -- dtl
+dt_service -- dt
+
+/'Third Party Interactions'/
+bandwidth -- messenger
 @enduml
