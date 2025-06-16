@@ -1,6 +1,6 @@
 @startuml
 !pragma teoz true
-/'Defines the protocol when user submits a test that is to be executed once, in the future.'/
+/'Defines the protocol when user submits a scheduled test, either recurring or singleton.'/
 /'author: Luvai Cutlerywala <luvaidc@gmail.com>'/
 
 /'Define the actors and participants.'/
@@ -39,17 +39,33 @@ end box
 user -> web_ui: Create test with {test_metadata}, to be run at {date_time}.
 web_ui -> service_manager: Create test with {test_metadata}, to be run at {date_time}.
 service_manager -> deliverability_test: Create test with {test_metadata}.
-activate deliverability_test
-deliverability_test -> dt: Insert record with {test_id, test_metadata}.
-deliverability_test --> service_manager: Test created, {test_id}.
-deactivate deliverability_test
-service_manager -> listener_queue: Add test with {test_id, test_metadata}, to be run at {date_time}.
-listener_queue --> service_manager: Added test with {test_id, test_metadata, date_time}.
-activate listener
-listener -> listener_queue: Give latest tests to schedule.
-listener_queue --> listener: Test with {test_id, test_metadata} scheduled at {date_time}.
-listener -> dtl: Insert test with {test_log_id, test_id, test_metadata, date_time}.
-deactivate listener
+alt Test is a singleton scheduled test
+    activate deliverability_test
+    deliverability_test -> dt: Insert record with {test_id, test_metadata}.
+    deliverability_test --> service_manager: Test created, {test_id}.
+    deactivate deliverability_test
+    service_manager -> listener_queue: Add test with {test_id, test_metadata}, to be run at {date_time}.
+    listener_queue --> service_manager: Added test with {test_id, test_metadata, date_time}.
+    activate listener
+    listener -> listener_queue: Give latest tests to schedule.
+    listener_queue --> listener: Tests with {test_id, test_metadata} scheduled at {date_times}.
+    loop For all tests scheduled
+    listener -> dtl: Insert test with {test_log_id, test_id, test_metadata, date_time}.
+    end
+    deactivate listener
+else Test is a recurring scheduled test
+    activate deliverability_test
+    deliverability_test -> dt: Insert record with {test_id, test_metadata}.
+    deliverability_test --> service_manager: Test created, {test_id}.
+    deactivate deliverability_test
+    service_manager -> listener_queue: Add test with {test_id, test_metadata}, to be run at {date_time}.
+    listener_queue --> service_manager: Added test with {test_id, test_metadata, date_time}.
+    activate listener
+    listener -> listener_queue: Give latest tests to schedule.
+    listener_queue --> listener: Test with {test_id, test_metadata} scheduled at {date_time}.
+    listener -> dtl: Insert test with {test_log_id, test_id, test_metadata, date_time}.
+    deactivate listener
+end
 group {date_time} is now
     scheduler -> dtl: Get tests with {date_time}, scheduled for now.
     note left
@@ -65,7 +81,7 @@ group {date_time} is now
     deactivate deliverability_test
     service_manager -> messenger: Send messages with {message_data}.
     activate messenger
-    loop "Iterate over messages"
+    loop Iterate over messages
         messenger -> broker_api: Send message with {message_data}.
         broker_api --> messenger: Messages sent, {message_sent_webhook}.
     end
