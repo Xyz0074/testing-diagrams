@@ -50,7 +50,7 @@ alt Test is a singleton scheduled test
     listener -> listener_queue: Give latest tests to schedule.
     listener_queue --> listener: Tests with {test_id, test_metadata} scheduled at {date_times}.
     loop For all tests scheduled
-    listener -> dtl: Insert test with {test_log_id, test_id, test_metadata, date_time}.
+        listener -> dtl: Insert test with {test_log_id, test_id, test_metadata, date_time}.
     end
     deactivate listener
 else Test is a recurring scheduled test
