@@ -54,7 +54,7 @@ alt Schedule changed
         deliverability_test_log --> service_manager: Test initiated, {test_log_id}.
         deactivate deliverability_test_log
         service_manager -> service_manager: executeTest()
-    else Test with singleton scheduled test
+    else Test with recurring scheduled test
         service_manager -> listener_queue: Add test with {test_id, test_metadata}, to be run at {date_time}.
         listener_queue --> service_manager: Added test with {test_id, test_metadata, date_time}.
         activate listener
@@ -64,7 +64,7 @@ alt Schedule changed
             listener -> dtl: Insert test with {test_log_id, test_id, test_metadata, date_time}.
         end
         deactivate listener
-    else Test with recurring scheduled test
+    else Test with singleton scheduled test
         service_manager -> listener_queue: Add test with {test_id, test_metadata}, to be run at {date_time}.
         listener_queue --> service_manager: Added test with {test_id, test_metadata, date_time}.
         activate listener

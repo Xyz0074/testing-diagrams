@@ -39,7 +39,7 @@ end box
 user -> web_ui: Create test with {test_metadata}, to be run at {date_time}.
 web_ui -> service_manager: Create test with {test_metadata}, to be run at {date_time}.
 service_manager -> deliverability_test: Create test with {test_metadata}.
-alt Test is a singleton scheduled test
+alt Test is a recurring scheduled test
     activate deliverability_test
     deliverability_test -> dt: Insert record with {test_id, test_metadata}.
     deliverability_test --> service_manager: Test created, {test_id}.
@@ -53,7 +53,7 @@ alt Test is a singleton scheduled test
         listener -> dtl: Insert test with {test_log_id, test_id, test_metadata, date_time}.
     end
     deactivate listener
-else Test is a recurring scheduled test
+else Test is a singleton scheduled test
     activate deliverability_test
     deliverability_test -> dt: Insert record with {test_id, test_metadata}.
     deliverability_test --> service_manager: Test created, {test_id}.
