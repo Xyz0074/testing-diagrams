@@ -2,7 +2,7 @@
 !pragma teoz true
 
 /'Defines the protocol when a test is executed. For later references, this diagram represents the algorithm for the'/
-/'subroutine labelled as executeTests() in the service manager.'/
+/'subroutine labelled as executeTest() in the service manager.'/
 /'author: Luvai Cutlerywala <luvaidc@gmail.com>'/
 
 /'Define the actors and participants.'/
