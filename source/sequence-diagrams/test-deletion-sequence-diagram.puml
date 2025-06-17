@@ -1,0 +1,51 @@
+@startuml
+!pragma teoz true
+/'Defines the protocol when user submits a scheduled test, either recurring or singleton.'/
+/'author: Luvai Cutlerywala <luvaidc@gmail.com>'/
+
+/'Define the actors and participants.'/
+actor User as user
+
+box UI
+    participant "Web UI" as web_ui
+    participant "Mobile App" as mobile_app
+end box
+
+box Backend
+    control "Service Manager" as service_manager
+    box Listener
+        queue "Listener Queue" as listener_queue
+        participant "Listener" as listener
+    end box
+    participant "Scheduler" as scheduler
+    participant "Deliverability Test" as deliverability_test
+    participant "Deliverability Test Log" as deliverability_test_log
+    participant "Messaging Service" as messenger
+    participant "Deliverability Test Phones" as deliverability_test_phones
+    participant "Report Generation Service" as report_generator
+end box
+
+box Database
+    database deliverability_test as dt
+    database deliverability_test_logs as dtl
+    database deliverability_test_phones as dtp
+end box
+
+box "Broker API"
+    participant "Bandwidth API" as broker_api
+end box
+
+/'Defines the interactions and protocols between the microservices.'/
+user -> web_ui: Delete test with {test_id}
+web_ui -> service_manager: Delete test with {test_id}
+service_manager -> deliverability_test: Delete test with {test_id}
+activate deliverability_test
+deliverability_test -> dt: Delete test with {test_id}
+note left
+This is soft delete, so the status of the test is set to deleted rather
+than actually removing the entry from the table.
+end note
+dt --> deliverability_test: Deleted test with {test_id}
+deliverability_test --> service_manager: Deleted test with {test_id}
+deactivate deliverability_test
+@enduml
