@@ -22,6 +22,7 @@ node "Application Server" {
     component "Report Generation Service" as rg_service
     component "Scheduler" as scheduler
     component "Messaging Service" as messenger
+    component "Authentication Service" as auth
 }
 
 cloud "Broker API" {
@@ -33,6 +34,7 @@ database Database {
     component "Deliverability Test Log" as dtl
     component "Deliverability Test" as dt
     component "Deliverability Test Phones" as dtp
+    component "Clients" as clients
     skinparam componentStyle uml2
 }
 
@@ -54,6 +56,7 @@ service_manager -- dtl_service
 service_manager -- rg_service
 scheduler -- service_manager
 service_manager -- messenger
+service_manager -- auth
 
 /'Database Interactions'/
 listener -- dtl
@@ -61,6 +64,7 @@ scheduler -- dtl
 dtp_service -- dtp
 dtl_service -- dtl
 dt_service -- dt
+auth -- clients
 
 /'Third Party Interactions'/
 bandwidth -- messenger

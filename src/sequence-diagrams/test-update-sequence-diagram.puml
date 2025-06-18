@@ -25,12 +25,14 @@ box Backend
     participant "Messaging Service" as messenger
     participant "Deliverability Test Phones" as deliverability_test_phones
     participant "Report Generation Service" as report_generator
+    participant "Authentication Service" as auth
 end box
 
 box Database
     database deliverability_test as dt
     database deliverability_test_logs as dtl
     database deliverability_test_phones as dtp
+    database clients as clients
 end box
 
 box "Broker API"
