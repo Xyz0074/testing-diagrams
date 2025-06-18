@@ -1,7 +1,7 @@
 @startuml
 !pragma teoz true
 
-/'Defines the protocol when a user submits a request to create and execute a test immediately'/
+/'Defines the protocol when a user submits a request to create and execute a test immediately.'/
 /'author: Luvai Cutlerywala <luvaidc@gmail.com>'/
 
 /'Define the actors and participants.'/
@@ -16,24 +16,29 @@ box Backend
     control "Service Manager" as service_manager
 
     box Listener
-        queue "Listener Queue" as listener_queue
+        queue "Listener\nQueue" as listener_queue
         participant "Listener" as listener
     end box
 
     participant "Scheduler" as scheduler
-    participant "Deliverability Test" as deliverability_test
-    participant "Deliverability Test Log" as deliverability_test_log
-    participant "Messaging Service" as messenger
-    participant "Deliverability Test Phones" as deliverability_test_phones
-    participant "Report Generation Service" as report_generator
-    participant "Authentication Service" as auth
+    participant "Deliverability\nTest" as deliverability_test
+    participant "Deliverability\nTest Log" as deliverability_test_log
+    participant "Messaging\nService" as messenger
+    participant "Deliverability\nTest Phones" as deliverability_test_phones
+    participant "Report\nGeneration Service" as report_generator
+    participant "Authentication\nService" as auth
 end box
 
 box Database
-    database deliverability_test as dt
-    database deliverability_test_logs as dtl
-    database deliverability_test_phones as dtp
+    database "deliverability_test" as dt
+    database "deliverability_\ntest_logs" as dtl
+    database "deliverability_\ntest_phones" as dtp
     database clients as clients
+    database clients_log as cl
+end box
+
+box "Broker API"
+    participant "Bandwidth API" as broker_api
 end box
 
 box "Broker API"
