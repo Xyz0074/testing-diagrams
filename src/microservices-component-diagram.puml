@@ -35,6 +35,7 @@ database Database {
     component "Deliverability Test" as dt
     component "Deliverability Test Phones" as dtp
     component "Clients" as clients
+    component "Client Logs" as cl
     skinparam componentStyle uml2
 }
 
@@ -65,6 +66,7 @@ dtp_service -- dtp
 dtl_service -- dtl
 dt_service -- dt
 auth -- clients
+auth -- cl
 
 /'Third Party Interactions'/
 bandwidth -- messenger
