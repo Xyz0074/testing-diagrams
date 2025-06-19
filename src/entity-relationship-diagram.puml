@@ -1,3 +1,69 @@
 @startuml
+/'Defines the entities in the deliverability testing project, and their relevant relationships.'/
+/'author: Luvai Cutlerywala <luvaidc@gmail.com>'/
 
+/'Define the entities.'/
+entity "deliverability_tests" as dt {
+    id : Int (Primary Key)
+    --
+    created_at : Timestamp
+    updated_at : Timestamp
+    type : Enum('Immediate', 'Singleton', 'Recurring')
+    client : Int (Foreign Key)
+    scheduled_for : Timestamp
+    scope_location_ids : String[]
+    phone_list : String[]
+    message_body : String
+    media_urls : String[]
+    recurrence_rule : JSON
+    status : Enum('Active', 'Inactive', 'Deleted') DEFAULT 'Inactive'
+}
+
+entity "deliverability_test_logs" as dtl {
+    id : Int (Primary Key)
+    --
+    test_id : Int (Foreign Key)
+    phone_number : String
+    received_message : String
+    created_at : Timestamp
+    updated_at : Timestamp
+    status : Enum('Initiated', 'Sent', 'Delivered', 'Received', 'Failed') DEFAULT 'Initiated'
+    message_sent_at : Timestamp
+    message_received_at : Timestamp
+    failure_reason : String
+    broker_message_id : String
+}
+
+entity "deliverability_test_phones" as dtp {
+    id : Int (Primary Key)
+    --
+    phone_number : String
+    carrier : String
+    name : String
+    created_at : Timestamp
+    updated_at : Timestamp
+    clients : Int[] (Foreign Keys)
+}
+
+entity "clients" as clients {
+    id : Int (Primary Key)
+    --
+    name : String
+    username : String
+    password : String
+}
+
+entity "client_logs" as cl {
+    id : Int (Primary Key)
+    --
+    client_id : Int (Foreign Key)
+    time : Timestamp
+    action : Enum('Sign In', 'Sign Out')
+}
+
+/'Defines the relationships.'/
+dt --{ dtl
+dtp --{ dtl
+clients --{ cl
+clients -- dt
 @enduml
