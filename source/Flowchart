@@ -1,0 +1,36 @@
+@startuml
+start
+note left
+  User is Signed up by Admin already
+end note
+:User enters Log in details;
+if (User's First Log in ?) then (yes)
+  :Get Prompt to change password;
+  note left
+  Initial log in password
+  given via mail
+  end note
+  :User set new password;
+  :Log out User;
+  :Log in with new password;
+else (no)
+  :Create Test;
+  :Insert record in deliverability_test table;
+  if (Scheduled?) then (yes)
+    :Add test to Listener Queue;
+    :Insert test in deliverability_test_logs;
+    if (recurring?) then (yes)
+      repeat :For all tests scheduled;
+        :Insert test in deliverability_test_logs;
+      repeat while (next schedule)
+    else (singleton)
+      stop
+    end if
+  else (no)
+    :Service manager initiates test;
+    :Insert record in deliverability_test_logs;
+    :Service manager executes test;
+  end if
+end if
+stop
+@enduml
