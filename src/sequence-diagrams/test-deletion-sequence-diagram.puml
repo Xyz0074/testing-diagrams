@@ -47,8 +47,9 @@ service_manager -> deliverability_test: Delete test with {test_id}
 activate deliverability_test
 deliverability_test -> dt: Delete test with {test_id}
 note left
-This is soft delete, so the status of the test is set to deleted rather
-than actually removing the entry from the table.
+This is a soft delete, so the status of the test
+is set to deleted rather than actually removing
+the entry from the table.
 end note
 dt --> deliverability_test: Deleted test with {test_id}
 deliverability_test --> service_manager: Deleted test with {test_id}
