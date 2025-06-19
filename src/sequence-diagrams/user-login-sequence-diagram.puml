@@ -73,6 +73,12 @@ alt Log In
         auth --> service_manager: Client does not exist.
         service_manager --> web_ui: Client does not exist.
         web_ui --> user: Please contact admin for account.
+        note right
+            It is assumed that the admins already
+            have accounts that are set up. For MVP,
+            there is no need to consider the
+            ability to upgrade accounts to admin role.
+        end note
     end
     deactivate auth
 else Log Out
