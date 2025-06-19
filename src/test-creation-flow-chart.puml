@@ -1,4 +1,6 @@
 @startuml
+
+/'author: Bushra Attarwala <bushraattarwala15@gmail.com>'/
 start
 note left
   User is Signed up by Admin already
