@@ -56,7 +56,6 @@ scheduler -- service_manager
 service_manager -- messenger
 
 /'Database Interactions'/
-listener -- dtl
 scheduler -- dtl
 dtp_service -- dtp
 dtl_service -- dtl
