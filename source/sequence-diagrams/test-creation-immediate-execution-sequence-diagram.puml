@@ -48,5 +48,25 @@ activate deliverability_test_log
 deliverability_test_log -> dtl: Insert record with {test_log_id, test_id, test_metadata}.
 deliverability_test_log --> service_manager: Test initiated, {test_log_id}.
 deactivate deliverability_test_log
-service_manager -> service_manager: executeTest()
+service_manager -> messenger: executeTest()
+activate messenger
+messenger -> broker_api: Send message with message data
+broker_api-->messenger:Message sent,(message_sent_webhook)
+messenger --> service_manager: Messages sent successfully.
+deactivate messenger
+service_manager -> deliverability_test_log: Update test {test_log_id} to sent.
+activate deliverability_test_log
+deliverability_test_log -> dtl: Update test with {test_log_id} to sent.
+deliverability_test_log --> service_manager: Test updated.
+deactivate deliverability_test_log
+activate messenger
+broker_api --> messenger: Messages delivered, {message_delivered_webhook}.
+messenger --> service_manager: Messages delivered successfully.
+deactivate messenger
+service_manager -> deliverability_test_log: Update test {test_log_id} to delivered.
+activate deliverability_test_log
+deliverability_test_log -> dtl: Update test with {test_log_id} to delivered.
+deliverability_test_log --> service_manager: Test updated.
+deactivate deliverability_test_log
+service_manager -> service_manager: End test.
 @enduml
