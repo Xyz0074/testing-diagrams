@@ -1,0 +1,75 @@
+@startuml
+' Enable crow's foot notation
+!define ER
+!define table(x) entity x
+!define primary_key(x) *x : 
+!define attribute(x, t) x : t
+
+skinparam linetype ortho
+left to right direction
+hide circle
+
+' === Entity: Clients ===
+table(client_details) {
+  primary_key(id) Int
+  attribute(name, String)
+  attribute(username, String)
+  attribute(password, String)
+  attribute(IsAdmin, Boolean)
+}
+
+table(client_logs) {
+  primary_key(id) Int
+  attribute(client_id, Int) <<FK>>
+  attribute(time, Timestamp)
+  attribute(action, Enum('Sign In', 'Sign Out'))
+}
+
+' === Entity: Deliverability Tests ===
+table(deliverability_tests) {
+  primary_key(id) Int
+  attribute(created_at, Timestamp)
+  attribute(updated_at, Timestamp)
+  attribute(type, Enum('Immediate', 'Scheduled', 'Recurring'))
+  attribute(client, Int) <<FK>>
+  attribute(scheduled_for, Timestamp)
+  attribute(scope_location_id, String)
+  attribute(phone_list, String[])
+  attribute(message_body, String)
+  attribute(media_urls, String[])
+  attribute(recurrence_rule, JSON)
+  attribute(status, Enum('Active', 'Inactive', 'Deleted')) = 'Inactive'
+}
+
+table(deliverability_test_logs) {
+  primary_key(id) Int
+  attribute(test_id, String) <<FK>>
+  attribute(phone_number, String)
+  attribute(text_message, String)
+  attribute(created_at, Timestamp)
+  attribute(updated_at, Timestamp)
+  attribute(status, Enum('Initiated', 'Sent', 'Delivered', 'Received', 'Failed')) = 'Initiated'
+  attribute(message_sent_at, Timestamp)
+  attribute(message_received_at, Timestamp)
+  attribute(failure_reason, String)
+  attribute(broker_message_id, String)
+}
+
+table(deliverability_test_phones) {
+  primary_key(id) Int
+  attribute(phone_number, String)
+  attribute(carrier, String)
+  attribute(name, String)
+  attribute(created_at, Timestamp)
+  attribute(updated_at, Timestamp)
+  attribute(client_id, Int) <<FK>>
+  attribute(location, String)
+}
+
+' === Relationships using crow's foot ===
+client_details ||--o{ client_logs : has
+client_details ||--o{ deliverability_tests : creates
+client_details ||--o{ deliverability_test_phones : owns
+deliverability_tests ||--o{ deliverability_test_logs : generates
+
+@enduml
