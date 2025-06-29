@@ -44,6 +44,7 @@ deliverability_test -> dt: Insert record with {test_id, test_metadata}.
 deliverability_test --> service_manager: Test created, {test_id}.
 deactivate deliverability_test
 service_manager -> deliverability_test_log: Initiate test with {test_id, test_metadata}.
+loop Insert initiated test records for each phone number in test
 activate deliverability_test_log
 deliverability_test_log -> dtl: Insert record with {test_log_id, test_id, test_metadata}.
 deliverability_test_log --> service_manager: Test initiated, {test_log_id}.
@@ -69,4 +70,5 @@ deliverability_test_log -> dtl: Update test with {test_log_id} to delivered.
 deliverability_test_log --> service_manager: Test updated.
 deactivate deliverability_test_log
 service_manager -> service_manager: End test.
+end
 @enduml
