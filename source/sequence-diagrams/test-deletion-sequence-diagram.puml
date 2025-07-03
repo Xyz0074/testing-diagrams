@@ -1,51 +1,47 @@
 @startuml
 !pragma teoz true
-/'Defines the protocol when user submits a scheduled test, either recurring or singleton.'/
-/'author: Luvai Cutlerywala <luvaidc@gmail.com>'/
 
-/'Define the actors and participants.'/
+/' Hard delete cascade flow for deliverability_test and deliverability_test_logs. '/
+
 actor User as user
 
-box UI
-    participant "Web UI" as web_ui
-    participant "Mobile App" as mobile_app
-end box
+participant "Web UI" as web_ui
 
 box Backend
     control "Service Manager" as service_manager
-    box Listener
-        queue "Listener Queue" as listener_queue
-        participant "Listener" as listener
-    end box
-    participant "Scheduler" as scheduler
-    participant "Deliverability Test" as deliverability_test
-    participant "Deliverability Test Log" as deliverability_test_log
-    participant "Messaging Service" as messenger
-    participant "Deliverability Test Phones" as deliverability_test_phones
-    participant "Report Generation Service" as report_generator
+    participant "Deliverability Test Service" as deliverability_test
 end box
 
 box Database
-    database deliverability_test as dt
-    database deliverability_test_logs as dtl
-    database deliverability_test_phones as dtp
+    database "deliverability_test" as dt
+    database "deliverability_test_logs" as dtl
 end box
 
-box "Broker API"
-    participant "Bandwidth API" as broker_api
-end box
+/' Step-by-step deletion flow with cascade '/
 
-/'Defines the interactions and protocols between the microservices.'/
-user -> web_ui: Delete test with {test_id}
-web_ui -> service_manager: Delete test with {test_id}
-service_manager -> deliverability_test: Delete test with {test_id}
+user -> web_ui: Clicks "Delete Test" {test_id}
+web_ui -> service_manager: Request delete for {test_id}
+service_manager -> deliverability_test: Delete test {test_id}
 activate deliverability_test
-deliverability_test -> dt: Delete test with {test_id}
-note left
-This is soft delete, so the status of the test is set to deleted rather
-than actually removing the entry from the table.
-end note
-dt --> deliverability_test: Deleted test with {test_id}
-deliverability_test --> service_manager: Deleted test with {test_id}
-deactivate deliverability_test
+
+deliverability_test -> dt: DELETE test WHERE test_id = {test_id}
+activate dt
+dt -> dt: Locate row in deliverability_test with test_id
+dt -> dt: Remove test row from deliverability_test
+
+/' Cascade process begins '/
+dt -> dtl: Trigger ON DELETE CASCADE for test_id
+activate dtl
+dtl -> dtl: Find all logs WHERE test_id = {test_id}
+dtl -> dtl: DELETE logs with test_id = {test_id}
+dtl --> dt: Logs deleted
+deactivate dtl
+
+dt --> deliverability_test: Test and logs deleted
+deactivate dt
+
+deliverability_test --> service_manager: Deletion successful
+service_manager --> web_ui: Success response
+web_ui --> user: Removed test from display
+
 @enduml
