@@ -1,0 +1,30 @@
+@startuml
+title Read Incoming SMS Messages 
+
+actor User
+participant "Flutter Mobile App" as Flutter
+participant "Native Android/iOS Layer\n(readsms Plugin)" as Native
+participant "UI Renderer" as UI
+participant "Service Manager" as sm
+participant "Deliverability Test Logs" as dtl
+database deliverability_test_logs as db
+
+User -> Flutter : Launch App / Open Message Screen
+Flutter -> Native : Initialize SMS Listener (readsms)
+Native --> Flutter : Wait for incoming SMS...
+
+== New SMS Received ==
+
+Native -> Flutter : onSmsReceived Event Triggered
+== Display on App ==
+Flutter -> Flutter : Parse SMS Content
+Flutter -> UI : Update UI with Message
+UI -> User : Display message content 
+== Update Logs ==
+Flutter-> sm :Message Recieved
+sm-> dtl: Update test {test_log_id} to received.
+            activate dtl
+            dtl -> db: Update test with {test_log_id} to received.
+            dtl --> sm: Test updated.
+            deactivate dtl
+@enduml
