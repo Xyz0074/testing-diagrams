@@ -13,8 +13,7 @@ box Backend
     participant "Deliverability Test" as deliverability_test
     participant "Deliverability Test Log" as deliverability_test_log
     participant "Messaging Service" as messenger
-    participant "Deliverability Test Phones" as deliverability_test_phones
-    participant "Report Generation Service" as report_generator
+    participant "Deliverability Test Phones Service" as deliverability_test_phones
 end box
 
 box Database
@@ -27,38 +26,45 @@ box "Broker API"
     participant "Bandwidth API" as broker_api
 end box
 
-/' User initiates test creation '/
-user -> web_ui: Create test with {test_metadata}, to be run at {date_time}.
-web_ui -> service_manager: Create test with {test_metadata}, to be run at {date_time}.
-service_manager -> deliverability_test: Create test with {test_metadata}.
-    activate deliverability_test
-    deliverability_test -> dt: Insert record with {test_id, test_metadata}.
-    deliverability_test --> service_manager: Test created, {test_id}.
 /' --- HOURLY SCHEDULER --- '/
 group Every Hour
-    hourly -> deliverability_test: Query tests scheduled for next hour.
-    deliverability_test -> dt:Get tests scheduled for next hour.
-    dt-->deliverability_test: Return test records {test_id, scheduled_time}.
-    deliverability_test --> hourly: Return test records {test_id, scheduled_time}.
-    deactivate deliverability_test
+    hourly -> deliverability_test: Query tests scheduled for next hour
+    deliverability_test -> dt: SELECT * FROM deliverability_test WHERE scheduled_time in next hour
+    dt --> deliverability_test: Return [{test_id, scheduled_time}]
+    deliverability_test --> hourly: Return scheduled test records
+
+    /' FROM × TO Resolution '/
+    hourly -> deliverability_test: Get FROM numbers for test_id
+    deliverability_test -> dt: SELECT office_phone_no, client_id FROM greeting_offices WHERE client_id IN (...)
+    dt --> deliverability_test: 7 FROM numbers
+
+    hourly -> deliverability_test_phones: Get TO numbers for test_id
+    deliverability_test_phones -> dtp: SELECT phone_number FROM deliverability_test_phones WHERE id IN (...)
+    dtp --> deliverability_test_phones: 3 TO numbers
+
+    /' Generate deliverability_test_logs entries '/
     activate deliverability_test_log
-    hourly -> deliverability_test_log: Insert into deliverability_test_logs for execution.
-    deliverability_test_log->dtl:Insert test records {test_id, scheduled_time}.
-deactivate deliverability_test_log
+    loop 7 x 3 = 21 combinations
+        hourly -> deliverability_test_log: Insert log (test_id, from_number, to_number, scheduled_time)
+        deliverability_test_log -> dtl: INSERT INTO deliverability_test_logs (...)
+    end loop
+    deactivate deliverability_test_log
 end group
 
 /' --- PER MINUTE SEND SCHEDULER --- '/
 group Every Minute
-activate deliverability_test_log
-    min -> deliverability_test_log: Get tests scheduled for current minute.
-    deliverability_test_log->dtl:Get tests scheduled for current minute.
-    dtl-->deliverability_test_log:Return {test_log_id, test_id}
-    deliverability_test_log --> min: Return {test_log_id, test_id}
-    loop For each TO number with 1 sec delay
-        min -> service_manager: Start test with {test_id}
+    activate deliverability_test_log
+    min -> deliverability_test_log: Get tests scheduled for current minute
+    deliverability_test_log -> dtl: SELECT * FROM deliverability_test_logs WHERE scheduled_time = NOW()
+    dtl --> deliverability_test_log: Return [{test_log_id, test_id}]
+    deliverability_test_log --> min: Return active test logs
+
+    loop For each TO number (1/sec delay)
+        min -> service_manager: Start test with {test_log_id, test_id}
     end loop
-deactivate deliverability_test_log
-service_manager -> service_manager: executeTest() with {test_log_id, test_id}
+    deactivate deliverability_test_log
+
+    service_manager -> service_manager: executeTest(test_log_id, test_id)
 end group
 
 @enduml
