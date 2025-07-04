@@ -1,8 +1,16 @@
 @startuml
 !pragma teoz true
 
+/'Defines the protocol when a test is executed. For later references, this diagram represents the algorithm for the'/
+/'subroutine labelled as executeTest() in the service manager.'/
+/'author: Luvai Cutlerywala <luvaidc@gmail.com>'/
+
+/'Define the actors and participants.'/
 actor User as user
-participant "Web UI" as web_ui
+
+
+    participant "Web UI" as web_ui
+    participant "Mobile App" as mobile_app
 
 box Backend
     control "Service Manager" as service_manager
@@ -26,39 +34,58 @@ end box
 box "Broker API"
     participant "Bandwidth API" as broker_api
 end box
-
-/' User initiates test creation '/
-user -> web_ui: Create test with {test_metadata}, to be run at {date_time}.
-web_ui -> service_manager: Create test with {test_metadata}, to be run at {date_time}.
-service_manager -> deliverability_test: Create test with {test_metadata}.
-    activate deliverability_test
-    deliverability_test -> dt: Insert record with {test_id, test_metadata}.
-    deliverability_test --> service_manager: Test created, {test_id}.
-  
-/' --- HOURLY SCHEDULER --- '/
-group Every Hour
-    hourly -> deliverability_test: Query tests scheduled for next hour.
-    deliverability_test -> dt:Get tests scheduled for next hour.
-    dt-->deliverability_test: Return test records {test_id, scheduled_time}.
-    deliverability_test --> hourly: Return test records {test_id, scheduled_time}.
-    deactivate deliverability_test
+== Send messages==
+service_manager -> messenger: executeTest() with {test_log_id,test_id}
+activate messenger
+loop "Iterate over messages"
+    messenger -> broker_api: Send message with {message_data,test_id}.
+    broker_api --> messenger: Messages sent, {message_sent_webhook}.
+end
+alt Messages sent successfully
+activate min
+    messenger --> min: Messages sent successfully.
+    min -> deliverability_test_log: Update test {test_log_id} to sent.
     activate deliverability_test_log
-    hourly -> deliverability_test_log: Insert into deliverability_test_logs for execution.
-    deliverability_test_log->dtl:Insert test records {test_id, scheduled_time}.
-deactivate deliverability_test_log
-end group
-
-/' --- PER MINUTE SEND SCHEDULER --- '/
-group Every Minute
-activate deliverability_test_log
-    min -> deliverability_test_log: Get tests scheduled for current minute.
-    deliverability_test_log->dtl:Get tests scheduled for current minute.
-    dtl-->deliverability_test_log:Return {test_log_id, test_id}
-    deliverability_test_log --> min: Return {test_log_id, test_id}
-
-deliverability_test_log -->service_manager: Start test with {test_id, test_log_id}
-deactivate deliverability_test_log
-service_manager -> service_manager: executeTest()
-end group
-
+    deliverability_test_log -> dtl: Update test with {test_log_id} to sent.
+    deliverability_test_log --> min: Test updated.
+    deactivate deliverability_test_log
+    alt Messages delivered successfully
+        broker_api --> messenger: Messages delivered, {message_delivered_webhook}.
+        messenger --> min: Messages delivered successfully.
+        min -> deliverability_test_log: Update test {test_log_id} to delivered.
+        activate deliverability_test_log
+        deliverability_test_log -> dtl: Update test with {test_log_id} to delivered.
+        deliverability_test_log --> min: Test updated.
+        deactivate deliverability_test_log
+        mobile_app -> service_manager: Messages received, {message_metadata}.
+        alt Messages received successfully
+            service_manager -> deliverability_test_log: Update test {test_log_id} to received.
+            activate deliverability_test_log
+            deliverability_test_log -> dtl: Update test with {test_log_id} to received.
+            deliverability_test_log --> service_manager: Test updated.
+            deactivate deliverability_test_log
+        else Messages received unsuccessfully
+            service_manager -> deliverability_test_log: Update test {test_log_id} to failed.
+            activate deliverability_test_log
+            deliverability_test_log -> dtl: Update test with {test_log_id} to failed.
+            deliverability_test_log --> service_manager: Test updated.
+            deactivate deliverability_test_log
+    else Messages delivered unsuccessfully
+        messenger --> service_manager: Messages delivered unsuccessfully.
+        service_manager -> deliverability_test_log: Update test {test_log_id} to failed.
+        activate deliverability_test_log
+        deliverability_test_log -> dtl: Update test with {test_log_id} to failed.
+        deliverability_test_log --> service_manager: Test updated.
+        deactivate deliverability_test_log
+    end
+else Messages sent unsuccessfully
+    messenger --> min: Messages not sent successfully, {message_report}.
+    min -> deliverability_test_log: Update test {test_log_id} to failed.
+    activate deliverability_test_log
+    deliverability_test_log -> dtl: Update test with {test_log_id} to failed.
+    deliverability_test_log --> min: Test updated.
+    deactivate deliverability_test_log
+end
+min -> service_manager: End test.
+deactivate messenger
 @enduml
