@@ -31,7 +31,7 @@ box Database
     database deliverability_test_phones as dtp
 end box
 
-box "Broker API"
+box "Aggregator API"
     participant "Bandwidth API" as broker_api
 end box
 == Send messages==
