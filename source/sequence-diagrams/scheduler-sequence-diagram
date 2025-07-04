@@ -22,10 +22,6 @@ box Database
     database deliverability_test_phones as dtp
 end box
 
-box "Broker API"
-    participant "Bandwidth API" as broker_api
-end box
-
 /' --- HOURLY SCHEDULER --- '/
 group Every Hour
     hourly -> deliverability_test: Query tests scheduled for next hour
