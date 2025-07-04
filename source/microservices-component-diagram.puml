@@ -1,6 +1,6 @@
 @startuml
 
-/'Defines all the components in the diagram, including the actor.'/
+/'Defines all the components in the diagram, including the actor.'/ 
 User as user
 
 package UI {
@@ -11,17 +11,17 @@ package UI {
 node "Application Server" {
     component "Service Manager" as service_manager
 
-    package "Listener" {
-        queue "Listener Queue" as listener_queue
-        component "Listener" as listener
+    package "Schedulers" {
+        component "Text Execution Scheduler" as text_exec_scheduler
+        component "Send Message Scheduler" as send_msg_scheduler
     }
 
     component "Deliverability Test Log Service" as dtl_service
     component "Deliverability Test Service" as dt_service
     component "Deliverability Test Phones Service" as dtp_service
     component "Report Generation Service" as rg_service
-    component "Scheduler" as scheduler
     component "Messaging Service" as messenger
+    component "Authentication Service" as auth
 }
 
 cloud "Broker API" {
@@ -30,37 +30,41 @@ cloud "Broker API" {
 
 database Database {
     skinparam componentStyle rectangle
-    component "Deliverability Test Log" as dtl
-    component "Deliverability Test" as dt
-    component "Deliverability Test Phones" as dtp
+    database deliverability_test as dt
+    database deliverability_test_logs as dtl
+    database deliverability_test_phones as dtp
+    database deliverability_test_users as dtu
     skinparam componentStyle uml2
 }
 
-/'Defines the interactions between the components in the diagram.'/
-/'Frontend Interactions'/
+/'Defines the interactions between the components in the diagram.'/ 
+
+/'Frontend Interactions'/ 
 user -- web_ui
 user -- mobile_app
 web_ui -- service_manager
 mobile_app -- service_manager
-web_ui -- dtp_service
-mobile_app -- dtp_service
 
-/'Backend Interactions'/
-service_manager -- listener_queue
-listener_queue -- listener
-listener -- service_manager
+/'Backend Interactions'/ 
+service_manager -- text_exec_scheduler
+service_manager -- send_msg_scheduler
 service_manager -- dt_service
 service_manager -- dtl_service
+text_exec_scheduler -- dt_service
+send_msg_scheduler -- dtl_service
 service_manager -- rg_service
-scheduler -- service_manager
 service_manager -- messenger
+service_manager -- auth
+service_manager -- dtp_service
 
-/'Database Interactions'/
-scheduler -- dtl
+/'Database Interactions'/ 
 dtp_service -- dtp
 dtl_service -- dtl
 dt_service -- dt
+auth -- dtu
+rg_service -- dt
 
-/'Third Party Interactions'/
+/'Third Party Interactions'/ 
 bandwidth -- messenger
+
 @enduml
