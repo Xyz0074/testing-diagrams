@@ -10,7 +10,6 @@ box Backend
         participant "Test Execution Scheduler" as hourly
         participant "Send Message Scheduler" as min
     end box
-    participant "Scheduler" as scheduler
     participant "Deliverability Test" as deliverability_test
     participant "Deliverability Test Log" as deliverability_test_log
     participant "Messaging Service" as messenger
