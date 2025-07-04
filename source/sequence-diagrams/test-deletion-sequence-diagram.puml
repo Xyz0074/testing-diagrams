@@ -10,6 +10,7 @@ participant "Web UI" as web_ui
 box Backend
     control "Service Manager" as service_manager
     participant "Deliverability Test Service" as deliverability_test
+    participant "Deliverability Test Log Service" as deliverability_test_log
 end box
 
 box Database
@@ -25,23 +26,21 @@ service_manager -> deliverability_test: Delete test {test_id}
 activate deliverability_test
 
 deliverability_test -> dt: DELETE test WHERE test_id = {test_id}
-activate dt
+
 dt -> dt: Locate row in deliverability_test with test_id
 dt -> dt: Remove test row from deliverability_test
+dt --> deliverability_test: Test deleted
 
 /' Cascade process begins '/
-dt -> dtl: Trigger ON DELETE CASCADE for test_id
-activate dtl
-dtl -> dtl: Find all logs WHERE test_id = {test_id}
+deliverability_test -> deliverability_test_log: Trigger ON DELETE CASCADE for test_id
+activate deliverability_test_log
+deliverability_test_log -> dtl: Find all logs WHERE test_id = {test_id}
 dtl -> dtl: DELETE logs with test_id = {test_id}
-dtl --> dt: Logs deleted
-deactivate dtl
-
-dt --> deliverability_test: Test and logs deleted
-deactivate dt
+dtl --> deliverability_test_log: Logs deleted
+deliverability_test_log --> deliverability_test: Test and logs deleted
+deactivate deliverability_test_log
 
 deliverability_test --> service_manager: Deletion successful
 service_manager --> web_ui: Success response
 web_ui --> user: Removed test from display
-
 @enduml
