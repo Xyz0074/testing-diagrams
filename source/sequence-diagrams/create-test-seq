@@ -1,0 +1,44 @@
+@startuml
+actor User
+participant "Web UI" as UI
+box Backend
+participant "Service Manager" as SM
+participant "Deliverability Test Service" as DTS
+participant "Deliverability Test Phones Service" as DTPService
+end box
+box Database
+database "Textellent DB" as DB
+database deliverability_test as dt
+database deliverability_test_phones as dtp
+end box
+
+== Create Test ==
+User -> UI : Select Partner or Client + TO Numbers
+UI -> SM : Create test config (partner_id | client_id, to_numbers[])
+
+== Partner or Client Selection ==
+SM -> DTS : Create test with (partner_id | client_id, to_numbers[])
+
+alt Partner selected
+    DTS -> DB : SELECT client_id FROM partner_client_mapping WHERE partner_id = ?
+    DB --> DTS : client_id[]
+end
+
+== Get FROM Numbers ==
+DTS -> DB : SELECT office_phone_no, client_id FROM greeting_offices WHERE client_id IN (...)
+DB --> DTS : office_number_list
+
+== Get Client Names ==
+DTS -> DB : SELECT client_id, client_name FROM clients WHERE client_id IN (...)
+DB --> DTS : client_name append with {message_body}
+
+== Get TO Numbers ==
+DTS -> DTPService : Get TO numbers
+DTPService -> dtp : SELECT phone_number FROM deliverability_test_phones WHERE id IN (...)
+dtp --> DTPService : to_number_list
+DTPService --> DTS : to_number_list
+
+== Message Entry Creation ==
+DTS -> dt :Create entry for test 
+
+@enduml
