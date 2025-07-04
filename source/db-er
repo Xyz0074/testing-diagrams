@@ -1,0 +1,62 @@
+@startuml
+' Enable ERD with crow's foot notation
+!define ERD
+!define table(x) entity x
+hide circle
+
+entity deliverability_tests {
+  * id : Int
+  --
+  created_at : Timestamp
+  updated_at : Timestamp
+  test_type : Enum('Immediate', 'Scheduled', 'Recurring')
+  msg_type : Enum('SMS', 'MMS')
+  scheduled_for : Timestamp
+  user_id : Int
+  client_id : Varchar(15)
+  phone_id : Int
+  message_body : String
+  media_urls : String[]
+  recurrence_rule : JSON
+  status : Enum('Active', 'Inactive', 'Scheduled', 'Recurring active', 'Completed') <<Default: Inactive>>
+}
+
+entity deliverability_test_phones {
+  * id : Int
+  --
+  phone_number : Varchar(15)
+  carrier : String
+  name : String
+  created_at : Timestamp
+  updated_at : Timestamp
+}
+
+entity deliverability_test_logs {
+  * id : Int
+  --
+  test_id : String
+  phone_number : Varchar(15)
+  text_message : Text
+  created_at : Timestamp
+  updated_at : Timestamp
+  status : Enum('Initiated', 'Sent', 'Delivered', 'Received', 'Failed') <<Default: Initiated>>
+  message_sent_at : Timestamp
+  message_received_at : Timestamp
+  error_desc : String
+  error_code : String
+}
+
+entity deliverability_test_users {
+  * id : Int
+  --
+  name : String
+  username : String
+  password : String
+}
+
+' Relationships
+deliverability_tests ||--o{ deliverability_test_logs : generates
+deliverability_test_users ||--o{ deliverability_tests : owns
+deliverability_test_phones ||--o{ deliverability_tests : receives from
+
+@enduml
