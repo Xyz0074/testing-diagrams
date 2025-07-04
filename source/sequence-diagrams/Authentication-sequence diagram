@@ -1,0 +1,48 @@
+@startuml
+actor User
+
+participant "Web UI" as WebUI
+box Backend
+participant "Service Manager" as ServiceManager
+participant "Deliverability Test" as DeliverabilityTest
+participant "Deliverability Test Log" as DeliverabilityTestLog
+participant "Messaging Service" as MessagingService
+participant "Deliverability Test Phones" as DeliverabilityTestPhones
+participant "Report Generation Service" as ReportService
+participant "Authentication Service" as AuthService
+end box
+box Database
+database "deliverability_test" as DBTest
+database "deliverability_test_logs" as DBLogs
+database "deliverability_test_phones" as DBPhones
+database deliverability_test_users as dtu
+end box
+box Aggregator API
+participant "Bandwidth API" as Bandwidth
+end box
+
+== Log in ==
+
+    User -> WebUI : Login with (client_details)
+    WebUI -> ServiceManager : Login with (client_details)
+activate AuthService
+ServiceManager -> AuthService : Authenticate client with (client_details)
+AuthService -> dtu : Get client with (client_details)
+dtu --> AuthService : (client_details_entity)
+AuthService -> AuthService : Check client details
+
+alt Client exists
+    alt Client details are correct
+        AuthService --> ServiceManager: Client has valid details
+        ServiceManager --> WebUI: Logged in
+    else Client details are incorrect
+        AuthService --> ServiceManager : Client has invalid details
+        ServiceManager -> User : Please enter the correct details
+    end
+else Client does not exist
+    AuthService --> ServiceManager : Client does not exist
+    deactivate AuthService
+    ServiceManager -> User : No User found
+end
+
+@enduml
