@@ -1,0 +1,65 @@
+@startuml
+!pragma teoz true
+
+actor User as user
+participant "Web UI" as web_ui
+
+box Backend
+    control "Service Manager" as service_manager
+    box Scheduler
+        participant "Test Execution Scheduler" as hourly
+        participant "Send Message Scheduler" as min
+    end box
+    participant "Scheduler" as scheduler
+    participant "Deliverability Test" as deliverability_test
+    participant "Deliverability Test Log" as deliverability_test_log
+    participant "Messaging Service" as messenger
+    participant "Deliverability Test Phones" as deliverability_test_phones
+    participant "Report Generation Service" as report_generator
+end box
+
+box Database
+    database deliverability_test as dt
+    database deliverability_test_logs as dtl
+    database deliverability_test_phones as dtp
+end box
+
+box "Broker API"
+    participant "Bandwidth API" as broker_api
+end box
+
+/' User initiates test creation '/
+user -> web_ui: Create test with {test_metadata}, to be run at {date_time}.
+web_ui -> service_manager: Create test with {test_metadata}, to be run at {date_time}.
+service_manager -> deliverability_test: Create test with {test_metadata}.
+    activate deliverability_test
+    deliverability_test -> dt: Insert record with {test_id, test_metadata}.
+    deliverability_test --> service_manager: Test created, {test_id}.
+  
+/' --- HOURLY SCHEDULER --- '/
+group Every Hour
+    hourly -> deliverability_test: Query tests scheduled for next hour.
+    deliverability_test -> dt:Get tests scheduled for next hour.
+    dt-->deliverability_test: Return test records {test_id, scheduled_time}.
+    deliverability_test --> hourly: Return test records {test_id, scheduled_time}.
+    deactivate deliverability_test
+    activate deliverability_test_log
+    hourly -> deliverability_test_log: Insert into deliverability_test_logs for execution.
+    deliverability_test_log->dtl:Insert test records {test_id, scheduled_time}.
+deactivate deliverability_test_log
+end group
+
+/' --- PER MINUTE SEND SCHEDULER --- '/
+group Every Minute
+activate deliverability_test_log
+    min -> deliverability_test_log: Get tests scheduled for current minute.
+    deliverability_test_log->dtl:Get tests scheduled for current minute.
+    dtl-->deliverability_test_log:Return {test_log_id, test_id}
+    deliverability_test_log --> min: Return {test_log_id, test_id}
+
+deliverability_test_log -->service_manager: Start test with {test_id, test_log_id}
+deactivate deliverability_test_log
+service_manager -> service_manager: executeTest()
+end group
+
+@enduml
