@@ -24,7 +24,7 @@ node "Application Server" {
     component "Authentication Service" as auth
 }
 
-cloud "Broker API" {
+cloud "Aggregator API" {
     interface "Bandwidth API" as bandwidth
 }
 
