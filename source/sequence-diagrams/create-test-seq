@@ -5,11 +5,13 @@ box Backend
 participant "Service Manager" as SM
 participant "Deliverability Test Service" as DTS
 participant "Deliverability Test Phones Service" as DTPService
+participant "Deliverability Test Logs Service" as DTLS
 end box
 box Database
 database "Textellent DB" as DB
 database deliverability_test as dt
 database deliverability_test_phones as dtp
+database deliverability_test_logs as dtl
 end box
 
 == Create Test ==
@@ -39,6 +41,18 @@ dtp --> DTPService : to_number_list
 DTPService --> DTS : to_number_list
 
 == Message Entry Creation ==
-DTS -> dt :Create entry for test 
+DTS -> dt : Create entry for test 
+
+alt test has recurrence_rule
+    DTS -> DTS: Expand recurrence_rule to future test instances
+    loop for each occurrence (e.g. daily for next 7 days)
+        DTS -> DTLS: Insert future log entry
+        DTLS -> dtl: Insert entry
+    end loop
+end
+
+alt test_type == Immediate
+    DTS -> SM : executeTest (test_id)
+end
 
 @enduml
