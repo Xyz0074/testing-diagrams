@@ -1,0 +1,58 @@
+@startuml
+title Report Generation and Export Flow
+
+actor User
+participant "Web UI" as UI
+participant "Service Manager" as ServiceManager
+participant "Listener Queue" as ListenerQueue
+participant "Listener" as Listener
+participant "Scheduler" as Scheduler
+participant "Deliverability Test" as DeliverabilityTest
+participant "Deliverability Test Log" as DeliverabilityTestLog
+participant "Messaging Service" as MessagingService
+participant "Deliverability Test Phones" as DeliverabilityTestPhones
+participant "Report Generation Service" as ReportGen
+database "deliverability_test" as DBTest
+database "deliverability_test_logs" as DBLogs
+database "deliverability_test_phones" as DBPhones
+database "clients" as DBClients
+database "clients_log" as DBClientLogs
+participant "Authentication Service" as AuthService
+participant "Bandwidth API" as Bandwidth
+
+== Request Individual Report ==
+User -> UI : User logs in (Reports visible on all executed tests as default)
+UI -> ServiceManager : Request report for tests with {client_id}
+ServiceManager -> ReportGen : Request report for tests with {client_id}
+ReportGen -> DBTest : Get entry for tests with {client_id}
+DBTest --> ReportGen : Entry for tests {test_id, test_metadata}
+ReportGen -> ReportGen : Generate report
+ReportGen --> ServiceManager : Report {report}
+ServiceManager --> UI : Report {report}
+UI --> User : Report for all executed tests
+
+== Request Filtered Reports ==
+User -> UI : User has selected a filtered list of tests
+UI -> ServiceManager : Request report for tests with {filter[]}
+ServiceManager -> ReportGen : Request report for tests with {filter[]}
+ReportGen -> DBTest : Get all tests where fields take the values {filter[]}
+DBTest --> ReportGen : Tests with specified parameters {test_id, test_metadata}
+ReportGen --> ServiceManager : Reports {report[]}
+ServiceManager --> UI : Report {report[]}
+UI --> User : Report of tests with selected filters
+
+== Export Report to PDF ==
+User -> UI : Export report with {client_id} to PDF
+UI -> ServiceManager : Export report with {cliet_id} to PDF
+ServiceManager -> ReportGen : Export report with {client_id} to PDF
+ReportGen -> DBTest : Get test metadata for {client_id}
+DBTest --> ReportGen : {test_metadata}
+ReportGen -> ReportGen : Generate PDF and populate using data from {test_metadata}
+ReportGen --> ServiceManager : Generated PDF {PDF}
+ServiceManager --> UI : Generated PDF {PDF}
+note right of UI
+Downloads using browser API. The following message is from the user's browser to the actual user.
+end note
+UI --> User : Download completed
+
+@enduml
