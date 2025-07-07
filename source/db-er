@@ -1,29 +1,33 @@
 @startuml
-' Enable ERD with crow's foot notation
-!define ERD
-!define table(x) entity x
+' Enable Crow's Foot
+!define table(x) class x << (T,#FFAAAA) >>
 hide circle
 
-entity deliverability_tests {
-  * id : Int
-  --
+' ========== deliverability_tests ==========
+table(deliverability_tests) {
+  + id : Int <<PK>>
   created_at : Timestamp
   updated_at : Timestamp
-  test_type : Enum('Immediate', 'Scheduled', 'Recurring')
-  msg_type : Enum('SMS', 'MMS')
+  test_type : Enum {Immediate, Scheduled, Recurring}
+  msg_type : Enum {SMS, MMS}
   scheduled_for : Timestamp
-  user_id : Int
-  client_id : Varchar(15)
-  phone_id : Int
+  user_id : Int <<FK>>
+  partner_id : Int <<FK>>
+  partner_name : String
+  client_ids : JSON[]
+  client_names : JSON[]
+  office_ids : JSON[]
+  office_phone_numbers : JSON[]
+  phone_ids : JSON[]
   message_body : String
-  media_urls : String[]
+  media_urls : JSON[]
   recurrence_rule : JSON
-  status : Enum('Active', 'Inactive', 'Scheduled', 'Recurring active', 'Completed') <<Default: Inactive>>
+  status : Enum {Active, Inactive, Scheduled, Recurring active, Completed} = 'Inactive'
 }
 
-entity deliverability_test_phones {
-  * id : Int
-  --
+' ========== deliverability_test_phones ==========
+table(deliverability_test_phones) {
+  + id : Int <<PK>>
   phone_number : Varchar(15)
   carrier : String
   name : String
@@ -31,32 +35,37 @@ entity deliverability_test_phones {
   updated_at : Timestamp
 }
 
-entity deliverability_test_logs {
-  * id : Int
-  --
-  test_id : String
+' ========== deliverability_test_logs ==========
+table(deliverability_test_logs) {
+  + id : Int <<PK>>
+  test_id : String <<FK>>
+  partner_id : Int <<FK>>
+  client_id : Int <<FK>>
+  office_id : Int <<FK>>
+  office_phone_number : Varchar(15)
   phone_number : Varchar(15)
-  text_message : Text
+  text_message : Text (utf8mb4)
   created_at : Timestamp
   updated_at : Timestamp
-  status : Enum('Initiated', 'Sent', 'Delivered', 'Received', 'Failed') <<Default: Initiated>>
+  status : Enum {Initiated, Sent, Delivered, Received, Failed} = 'Initiated'
   message_sent_at : Timestamp
   message_received_at : Timestamp
   error_desc : String
   error_code : String
 }
 
-entity deliverability_test_users {
-  * id : Int
-  --
+' ========== deliverability_test_users ==========
+table(deliverability_test_users) {
+  + id : Int <<PK>>
   name : String
   username : String
   password : String
 }
 
-' Relationships
-deliverability_tests ||--o{ deliverability_test_logs : generates
-deliverability_test_users ||--o{ deliverability_tests : owns
-deliverability_test_phones ||--o{ deliverability_tests : receives from
+' ========== Relationships ==========
+deliverability_test_users ||--o{ deliverability_tests : "creates"
+deliverability_tests ||--o{ deliverability_test_logs : "logs"
+deliverability_test_phones ||--o{ deliverability_tests : "receives from"
+deliverability_test_phones ||--o{ deliverability_test_logs : "appears in"
 
 @enduml
