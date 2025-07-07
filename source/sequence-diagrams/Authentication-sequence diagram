@@ -1,9 +1,14 @@
 @startuml
+!pragma teoz true
 actor User
 
 participant "Web UI" as WebUI
 box Backend
-participant "Service Manager" as ServiceManager
+box Service Manager
+participant "External API" as ext
+control "Service Manager" as ServiceManager
+participant "Service API" as api
+end box
 participant "Deliverability Test" as DeliverabilityTest
 participant "Deliverability Test Log" as DeliverabilityTestLog
 participant "Messaging Service" as MessagingService
@@ -23,24 +28,28 @@ end box
 
 == Log in ==
 
-    User -> WebUI : Login with (client_details)
-    WebUI -> ServiceManager : Login with (client_details)
+    User -> WebUI : Login with (user_details)
+    WebUI -> ext : Login with (user_details)
 activate AuthService
-ServiceManager -> AuthService : Authenticate client with (client_details)
-AuthService -> dtu : Get client with (client_details)
-dtu --> AuthService : (client_details_entity)
-AuthService -> AuthService : Check client details
+ext -> ServiceManager : Authenticate user details
+ServiceManager -> AuthService : Authenticate user with (user_details)
+AuthService -> dtu : Get user with (user_details)
+dtu --> AuthService : (user_details_entity)
+AuthService -> AuthService : Check User details
 
-alt Client exists
-    alt Client details are correct
-        AuthService --> ServiceManager: Client has valid details
+alt User exists
+    alt User details are correct
+        AuthService --> api: User has valid details
+        api->ServiceManager: User has valid details
         ServiceManager --> WebUI: Logged in
-    else Client details are incorrect
-        AuthService --> ServiceManager : Client has invalid details
+    else User details are incorrect
+        AuthService --> api : User has invalid details
+        api->ServiceManager:User has invalid details
         ServiceManager -> User : Please enter the correct details
     end
-else Client does not exist
-    AuthService --> ServiceManager : Client does not exist
+else User does not exist
+    AuthService --> api : User does not exist
+    api->ServiceManager:User does not exist
     deactivate AuthService
     ServiceManager -> User : No User found
 end
