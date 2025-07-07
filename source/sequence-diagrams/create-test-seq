@@ -1,22 +1,36 @@
 @startuml
+!pragma teoz true
 actor User
+
 participant "Web UI" as UI
 box Backend
-participant "Service Manager" as SM
-participant "Deliverability Test Service" as DTS
-participant "Deliverability Test Phones Service" as DTPService
-participant "Deliverability Test Logs Service" as DTLS
+box Service Manager
+participant "External API" as ext
+control "Service Manager" as SM
+participant "Service API" as api
+end box
+participant "Deliverability Test" as DTS
+participant "Deliverability Test Log" as DTLS
+participant "Messaging Service" as MessagingService
+participant "Deliverability Test Phones" as DTPService
+participant "Report Generation Service" as ReportService
+participant "Authentication Service" as AuthService
 end box
 box Database
 database "Textellent DB" as DB
-database deliverability_test as dt
-database deliverability_test_phones as dtp
-database deliverability_test_logs as dtl
+database "deliverability_test" as dt
+database "deliverability_test_logs" as dtl
+database "deliverability_test_phones" as dtp
+database deliverability_test_users as dtu
+end box
+box Aggregator API
+participant "Bandwidth API" as Bandwidth
 end box
 
 == Create Test ==
 User -> UI : Select Partner or Client + TO Numbers
-UI -> SM : Create test config (partner_id | client_id, to_numbers[])
+UI -> ext : Create test config (partner_id | client_id, to_numbers[])
+ext->SM:Create test config (partner_id | client_id, to_numbers[])
 
 == Partner or Client Selection ==
 SM -> DTS : Create test with (partner_id | client_id, to_numbers[])
@@ -27,18 +41,11 @@ alt Partner selected
 end
 
 == Get FROM Numbers ==
-DTS -> DB : SELECT office_phone_no, client_id FROM greeting_offices WHERE client_id IN (...)
-DB --> DTS : office_number_list
+DTS -> DB : SELECT office_phone_numer, client_id FROM greeting_offices WHERE client_id IN (...)
+DB --> DTS : office_phone_numbers
 
-== Get Client Names ==
-DTS -> DB : SELECT client_id, client_name FROM clients WHERE client_id IN (...)
-DB --> DTS : client_name append with {message_body}
-
-== Get TO Numbers ==
-DTS -> DTPService : Get TO numbers
-DTPService -> dtp : SELECT phone_number FROM deliverability_test_phones WHERE id IN (...)
-dtp --> DTPService : to_number_list
-DTPService --> DTS : to_number_list
+== Append in message_body ==
+DTS -> DTS : client_name & office_name append with {message_body}
 
 == Message Entry Creation ==
 DTS -> dt : Create entry for test 
@@ -46,7 +53,8 @@ DTS -> dt : Create entry for test
 alt test has recurrence_rule
     DTS -> DTS: Expand recurrence_rule to future test instances
     loop for each occurrence (e.g. daily for next 7 days)
-        DTS -> DTLS: Insert future log entry
+        DTS -> api: Insert future log entry
+        api -> DTLS: Insert future log entry
         DTLS -> dtl: Insert entry
     end loop
 end
