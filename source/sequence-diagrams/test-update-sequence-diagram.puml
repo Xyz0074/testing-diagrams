@@ -5,13 +5,14 @@
 
 /'Define the actors and participants.'/
 actor User as user
-
-
     participant "Web UI" as web_ui
-  
 
 box Backend
-    control "Service Manager" as service_manager
+box Service Manager
+participant "External API" as ext
+control "Service Manager" as service_manager
+participant "Service API" as api
+end box
     participant "Deliverability Test" as deliverability_test
     participant "Deliverability Test Log" as deliverability_test_log
     participant "Messaging Service" as messenger
@@ -35,7 +36,8 @@ deliverability_test -> dt: Update test with {test_id, test_metadata}.
 alt test has recurrence_rule
     deliverability_test -> deliverability_test: Expand recurrence_rule to future test instances
     loop for each occurrence (e.g. daily for next 7 days)
-        deliverability_test -> deliverability_test_log: Insert future log entry
+        deliverability_test -> api: Insert future log entry
+        api -> deliverability_test_log: Insert future log entry
         deliverability_test_log -> dtl: Insert entry
     end loop
 end
