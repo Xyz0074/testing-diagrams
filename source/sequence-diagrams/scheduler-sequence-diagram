@@ -5,7 +5,12 @@ actor User as user
 participant "Web UI" as web_ui
 
 box Backend
-    control "Service Manager" as service_manager
+    box Service Manager
+participant "External API" as ext
+control "Service Manager" as service_manager
+participant "Service API" as api
+end box
+
     box Scheduler
         participant "Test Execution Scheduler" as hourly
         participant "Send Message Scheduler" as min
@@ -24,25 +29,26 @@ end box
 
 /' --- HOURLY SCHEDULER --- '/
 group Every Hour
-    hourly -> deliverability_test: Query tests scheduled for next hour
+    hourly -> api: Query tests scheduled for next hour
+    api-> deliverability_test: Query tests scheduled for next hour
     deliverability_test -> dt: SELECT * FROM deliverability_test WHERE scheduled_time in next hour
     dt --> deliverability_test: Return [{test_id, scheduled_time}]
-    deliverability_test --> hourly: Return scheduled test records
+    deliverability_test --> api: Return scheduled test records
+    api --> hourly: Return scheduled test records
 
     /' FROM × TO Resolution '/
-    hourly -> deliverability_test: Get FROM numbers for test_id
-    deliverability_test -> dt: SELECT office_phone_no, client_id FROM greeting_offices WHERE client_id IN (...)
-    dt --> deliverability_test: 7 FROM numbers
-
-    hourly -> deliverability_test_phones: Get TO numbers for test_id
-    deliverability_test_phones -> dtp: SELECT phone_number FROM deliverability_test_phones WHERE id IN (...)
-    dtp --> deliverability_test_phones: 3 TO numbers
-
+    hourly -> api: Get FROM numbers & TO numbers for test_id
+    api -> deliverability_test: Get FROM numbers & TO numbers for test_id
+    deliverability_test -> dt: Get FROM numbers & TO numbers for test_id
+    dt --> deliverability_test: FROM numbers & TO numbers for test_id
+    deliverability_test-->api:FROM numbers & TO numbers for test_id
+    api-->hourly:FROM numbers & TO numbers for test_id
     /' Generate deliverability_test_logs entries '/
     activate deliverability_test_log
     loop 7 x 3 = 21 combinations
-        hourly -> deliverability_test_log: Insert log (test_id, from_number, to_number, scheduled_time)
-        deliverability_test_log -> dtl: INSERT INTO deliverability_test_logs (...)
+        hourly -> api: Insert log (test_id, from_number, to_number, scheduled_time)
+        api -> deliverability_test_log: Insert log (test_id, from_number, to_number, scheduled_time)
+        deliverability_test_log -> dtl: Insert Log
     end loop
     deactivate deliverability_test_log
 end group
@@ -50,10 +56,12 @@ end group
 /' --- PER MINUTE SEND SCHEDULER --- '/
 group Every Minute
     activate deliverability_test_log
-    min -> deliverability_test_log: Get tests scheduled for current minute
+    min -> api: Get tests scheduled for current minute
+    api -> deliverability_test_log: Get tests scheduled for current minute
     deliverability_test_log -> dtl: SELECT * FROM deliverability_test_logs WHERE scheduled_time = NOW()
     dtl --> deliverability_test_log: Return [{test_log_id, test_id}]
-    deliverability_test_log --> min: Return active test logs
+    deliverability_test_log --> api: Return active test logs
+    api --> min: Return active test logs
 
     loop For each TO number (1/sec delay)
         min -> service_manager: Start test with {test_log_id, test_id}
