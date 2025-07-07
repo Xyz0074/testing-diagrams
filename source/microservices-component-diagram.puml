@@ -9,7 +9,11 @@ package UI {
 }
 
 node "Application Server" {
-    component "Service Manager" as service_manager
+    package "Service Manager"{
+      component "External API" as ext
+      component "Service Manager" as service_manager
+      component "Service API" as api
+    }
 
     package "Schedulers" {
         component "Text Execution Scheduler" as text_exec_scheduler
@@ -42,20 +46,21 @@ database Database {
 /'Frontend Interactions'/ 
 user -- web_ui
 user -- mobile_app
-web_ui -- service_manager
-mobile_app -- service_manager
+web_ui -- ext
+mobile_app -- ext
 
 /'Backend Interactions'/ 
-service_manager -- text_exec_scheduler
-service_manager -- send_msg_scheduler
-service_manager -- dt_service
-service_manager -- dtl_service
-text_exec_scheduler -- dt_service
-send_msg_scheduler -- dtl_service
-service_manager -- rg_service
-service_manager -- messenger
-service_manager -- auth
-service_manager -- dtp_service
+ext -- service_manager
+service_manager -- api
+
+api -- text_exec_scheduler
+api-- send_msg_scheduler
+api -- dt_service
+api -- dtl_service
+api -- rg_service
+api -- messenger
+api -- auth
+api -- dtp_service
 
 /'Database Interactions'/ 
 dtp_service -- dtp
