@@ -15,7 +15,6 @@ box Backend
     box Service Manager
 participant "External API" as ext
 control "Service Manager" as service_manager
-participant "Service API" as api
 end box
   box Scheduler
         participant "Test Execution Scheduler" as hourly
@@ -43,24 +42,27 @@ loop "Iterate over messages"
     messenger -> broker_api: Send message with {message_data,test_id}.
     broker_api --> messenger: Messages sent, {message_sent_webhook}.
 end
+
 alt Messages sent successfully
-    messenger --> api: Messages sent successfully.
-    api -> deliverability_test_log: Update test {test_log_id} to sent.
+activate min
+    messenger --> min: Messages sent successfully.
+    min -> deliverability_test_log: Update test {test_log_id} to sent.
     activate deliverability_test_log
     deliverability_test_log -> dtl: Update test with {test_log_id} to sent.
-    deliverability_test_log --> api: Test updated.
+    deliverability_test_log --> min: Test updated.
     deactivate deliverability_test_log
+
     alt Messages delivered successfully
         broker_api --> messenger: Messages delivered, {message_delivered_webhook}.
-        messenger --> api: Messages delivered successfully.
-        api -> deliverability_test_log: Update test {test_log_id} to delivered.
+        messenger --> min: Messages delivered successfully.
+        min -> deliverability_test_log: Update test {test_log_id} to delivered.
         activate deliverability_test_log
         deliverability_test_log -> dtl: Update test with {test_log_id} to delivered.
-        deliverability_test_log --> api: Test updated.
+        deliverability_test_log --> min: Test updated.
         deactivate deliverability_test_log
-        mobile_app -> ext: Messages received, {message_metadata}.
+
         alt Messages received successfully
-            ext -> service_manager: Messages received, {message_metadata}.
+        mobile_app -> service_manager: Messages received, {message_metadata}.
             service_manager -> deliverability_test_log: Update test {test_log_id} to received.
             activate deliverability_test_log
             deliverability_test_log -> dtl: Update test with {test_log_id} to received.
@@ -68,10 +70,14 @@ alt Messages sent successfully
             deactivate deliverability_test_log
         else Messages received unsuccessfully
             service_manager -> deliverability_test_log: Update test {test_log_id} to failed.
+            note left
+          No response from app for >5mins
+        end note
             activate deliverability_test_log
             deliverability_test_log -> dtl: Update test with {test_log_id} to failed.
             deliverability_test_log --> service_manager: Test updated.
             deactivate deliverability_test_log
+            end
     else Messages delivered unsuccessfully
         messenger --> service_manager: Messages delivered unsuccessfully.
         service_manager -> deliverability_test_log: Update test {test_log_id} to failed.
@@ -81,13 +87,13 @@ alt Messages sent successfully
         deactivate deliverability_test_log
     end
 else Messages sent unsuccessfully
-    messenger --> api: Messages not sent successfully, {message_report}.
-    api -> deliverability_test_log: Update test {test_log_id} to failed.
+    messenger --> min: Messages not sent successfully, {message_report}.
+    min -> deliverability_test_log: Update test {test_log_id} to failed.
     activate deliverability_test_log
     deliverability_test_log -> dtl: Update test with {test_log_id} to failed.
-    deliverability_test_log --> api: Test updated.
+    deliverability_test_log --> min: Test updated.
     deactivate deliverability_test_log
-end
-api -> service_manager: End test.
+
+min -> service_manager: End test.
 deactivate messenger
 @enduml
