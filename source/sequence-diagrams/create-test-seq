@@ -7,7 +7,6 @@ box Backend
 box Service Manager
 participant "External API" as ext
 control "Service Manager" as SM
-participant "Service API" as api
 end box
 participant "Deliverability Test" as DTS
 participant "Deliverability Test Log" as DTLS
