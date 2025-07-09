@@ -4,9 +4,6 @@ title Report Generation and Export Flow
 actor User
 participant "Web UI" as UI
 participant "Service Manager" as ServiceManager
-participant "Listener Queue" as ListenerQueue
-participant "Listener" as Listener
-participant "Scheduler" as Scheduler
 participant "Deliverability Test" as DeliverabilityTest
 participant "Deliverability Test Log" as DeliverabilityTestLog
 participant "Messaging Service" as MessagingService
