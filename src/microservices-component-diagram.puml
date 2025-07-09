@@ -34,10 +34,18 @@ cloud "Aggregator API" {
 
 database Database {
     skinparam componentStyle rectangle
+<<<<<<< HEAD:source/microservices-component-diagram.puml
     database deliverability_test as dt
     database deliverability_test_logs as dtl
     database deliverability_test_phones as dtp
     database deliverability_test_users as dtu
+=======
+    component "Deliverability Test Log" as dtl
+    component "Deliverability Test" as dt
+    component "Deliverability Test Phones" as dtp
+    component "Clients" as clients
+    component "Client Logs" as cl
+>>>>>>> luvai-development:src/microservices-component-diagram.puml
     skinparam componentStyle uml2
 }
 
@@ -49,9 +57,22 @@ user -- mobile_app
 web_ui -- ext
 mobile_app -- ext
 
+<<<<<<< HEAD:source/microservices-component-diagram.puml
 /'Backend Interactions'/ 
 ext -- service_manager
 service_manager -- api
+=======
+/'Backend Interactions'/
+service_manager -- listener_queue
+listener_queue -- listener
+listener -- service_manager
+service_manager -- dt_service
+service_manager -- dtl_service
+service_manager -- rg_service
+scheduler -- service_manager
+service_manager -- messenger
+service_manager -- auth
+>>>>>>> luvai-development:src/microservices-component-diagram.puml
 
 api -- text_exec_scheduler
 api-- send_msg_scheduler
@@ -66,8 +87,13 @@ api -- dtp_service
 dtp_service -- dtp
 dtl_service -- dtl
 dt_service -- dt
+<<<<<<< HEAD:source/microservices-component-diagram.puml
 auth -- dtu
 rg_service -- dt
+=======
+auth -- clients
+auth -- cl
+>>>>>>> luvai-development:src/microservices-component-diagram.puml
 
 /'Third Party Interactions'/ 
 bandwidth -- messenger

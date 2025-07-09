@@ -1,0 +1,85 @@
+
+@startuml
+!pragma teoz true
+
+/' Hard delete cascade flow for deliverability_test and deliverability_test_logs. '/
+
+actor User as user
+
+participant "Web UI" as web_ui
+
+box Backend
+<<<<<<< HEAD:source/sequence-diagrams/test-deletion-sequence-diagram.puml
+    box Service Manager
+participant "External API" as ext
+control "Service Manager" as service_manager
+end box
+    participant "Deliverability Test Service" as deliverability_test
+    participant "Deliverability Test Log Service" as deliverability_test_log
+=======
+    control "Service Manager" as service_manager
+
+    box Listener
+        queue "Listener\nQueue" as listener_queue
+        participant "Listener" as listener
+    end box
+
+    participant "Scheduler" as scheduler
+    participant "Deliverability\nTest" as deliverability_test
+    participant "Deliverability\nTest Log" as deliverability_test_log
+    participant "Messaging\nService" as messenger
+    participant "Deliverability\nTest Phones" as deliverability_test_phones
+    participant "Report\nGeneration Service" as report_generator
+    participant "Authentication\nService" as auth
+>>>>>>> luvai-development:src/sequence-diagrams/test-deletion-sequence-diagram.puml
+end box
+
+box Database
+    database "deliverability_test" as dt
+<<<<<<< HEAD:source/sequence-diagrams/test-deletion-sequence-diagram.puml
+    database "deliverability_test_logs" as dtl
+=======
+    database "deliverability_\ntest_logs" as dtl
+    database "deliverability_\ntest_phones" as dtp
+    database clients as clients
+    database clients_log as cl
+>>>>>>> luvai-development:src/sequence-diagrams/test-deletion-sequence-diagram.puml
+end box
+
+/' Step-by-step deletion flow with cascade '/
+
+user -> web_ui: Clicks "Delete Test" {test_id}
+web_ui -> service_manager: Request delete for {test_id}
+service_manager -> deliverability_test: Delete test {test_id}
+activate deliverability_test
+<<<<<<< HEAD:source/sequence-diagrams/test-deletion-sequence-diagram.puml
+
+deliverability_test -> dt: DELETE test WHERE test_id = {test_id}
+
+dt -> dt: Locate row in deliverability_test with test_id
+dt -> dt: Remove test row from deliverability_test
+dt --> deliverability_test: Test deleted
+
+/' Cascade process begins '/
+deliverability_test -> deliverability_test_log: Trigger ON DELETE CASCADE for test_id
+activate deliverability_test_log
+deliverability_test_log -> dtl: Find all logs WHERE test_id = {test_id}
+dtl -> dtl: DELETE logs with test_id = {test_id}
+dtl --> deliverability_test_log: Logs deleted
+deliverability_test_log --> service_manager: Test and logs deleted
+deactivate deliverability_test_log
+
+service_manager --> web_ui: Success response
+web_ui --> user: Removed test from display
+=======
+deliverability_test -> dt: Delete test with {test_id}
+note left
+This is a soft delete, so the status of the test
+is set to deleted rather than actually removing
+the entry from the table.
+end note
+dt --> deliverability_test: Deleted test with {test_id}
+deliverability_test --> service_manager: Deleted test with {test_id}
+deactivate deliverability_test
+>>>>>>> luvai-development:src/sequence-diagrams/test-deletion-sequence-diagram.puml
+@enduml

@@ -1,0 +1,93 @@
+@startuml
+!pragma teoz true
+/'Defines the protocol when a user wants to log in or log out.'/
+/'author: Luvai Cutlerywala <luvaidc@gmail.com>'/
+
+/'Define the actors and participants.'/
+actor User as user
+
+box UI
+    participant "Web UI" as web_ui
+    participant "Mobile App" as mobile_app
+end box
+
+box Backend
+    control "Service Manager" as service_manager
+
+    box Listener
+        queue "Listener\nQueue" as listener_queue
+        participant "Listener" as listener
+    end box
+
+    participant "Scheduler" as scheduler
+    participant "Deliverability\nTest" as deliverability_test
+    participant "Deliverability\nTest Log" as deliverability_test_log
+    participant "Messaging\nService" as messenger
+    participant "Deliverability\nTest Phones" as deliverability_test_phones
+    participant "Report\nGeneration Service" as report_generator
+    participant "Authentication\nService" as auth
+end box
+
+box Database
+    database "deliverability_test" as dt
+    database "deliverability_\ntest_logs" as dtl
+    database "deliverability_\ntest_phones" as dtp
+    database clients as clients
+    database clients_log as cl
+end box
+
+box "Broker API"
+    participant "Bandwidth API" as broker_api
+end box
+
+alt Log In
+    user -> web_ui: Login with {client_details}
+    web_ui -> service_manager: Login with {client_details}
+    service_manager -> auth: Authenticate client with {client_details}
+    activate auth
+    auth -> clients: Get client with {client_details}
+    alt Client exists
+        clients --> auth: {client_details_entry}
+        auth -> auth: Check client details
+        alt Client details are correct
+            auth -> cl: Has client with {client_id} signed in before?
+            alt Client Sign In is initial
+                cl --> auth: Client has not signed in before
+                auth -> cl: Signed in at {current_date_time, session_token_id, client_id}
+                auth --> service_manager: Client session token with {client_id, session_token_id}, change password request.
+                service_manager --> web_ui: Initiate change password for {client_id, session_token_id}
+                web_ui --> user: Please change password
+                user -> web_ui: Input new password
+                service_manager -> service_manager: changePassword()
+            else Client Sign In is not initial
+                cl --> auth: Client has signed in before
+                auth -> cl: Signed in at {current_date_time, session_token_id, client_id}
+                auth --> service_manager: Client session token with {client_id, session_token_id}
+                service_manager --> web_ui: Client session initiated with {client_id, session_token_id}
+        else Client details are incorrect
+            auth --> service_manager: Client has invalid details
+            service_manager --> web_ui: Client has invalid details
+            web_ui --> user: Please enter the correct details.
+        end
+    else Client does not exist
+        auth --> service_manager: Client does not exist.
+        service_manager --> web_ui: Client does not exist.
+        web_ui --> user: Please contact admin for account.
+        note right
+            It is assumed that the admins already
+            have accounts that are set up. For MVP,
+            there is no need to consider the
+            ability to upgrade accounts to admin role.
+        end note
+    end
+    deactivate auth
+else Log Out
+    user -> web_ui: Log out
+    web_ui -> service_manager: Log out user with {client_id, session_token_id}
+    service_manager -> auth: Log out client with {client_id, session_token_id}
+    auth -> cl: Signed out at {current_date_time, session_token_id, client_id}
+    auth --> service_manager: Client signed out
+    service_manager --> web_ui: Client signed out
+    web_ui --> user: Signed out.
+end
+@enduml

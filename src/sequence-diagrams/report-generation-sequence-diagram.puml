@@ -1,0 +1,95 @@
+@startuml
+!pragma teoz true
+/'Defines the protocol when a user requests report to be generated for a test that has already been conducted.'/
+/'author: Luvai Cutlerywala <luvaidc@gmail.com>'/
+
+/'Define the actors and participants.'/
+actor User as user
+
+box UI
+    participant "Web UI" as web_ui
+    participant "Mobile App" as mobile_app
+end box
+
+box Backend
+    control "Service Manager" as service_manager
+
+    box Listener
+        queue "Listener\nQueue" as listener_queue
+        participant "Listener" as listener
+    end box
+
+    participant "Scheduler" as scheduler
+    participant "Deliverability\nTest" as deliverability_test
+    participant "Deliverability\nTest Log" as deliverability_test_log
+    participant "Messaging\nService" as messenger
+    participant "Deliverability\nTest Phones" as deliverability_test_phones
+    participant "Report\nGeneration Service" as report_generator
+    participant "Authentication\nService" as auth
+end box
+
+box Database
+    database "deliverability_test" as dt
+    database "deliverability_\ntest_logs" as dtl
+    database "deliverability_\ntest_phones" as dtp
+    database clients as clients
+    database clients_log as cl
+end box
+
+box "Broker API"
+    participant "Bandwidth API" as broker_api
+end box
+
+/'Defines the protocol for the report generation.'/
+== Report Generation ==
+alt User has selected an individual test
+    user -> web_ui: Request report for test with {test_log_id}.
+    web_ui -> service_manager: Request report for test with {test_log_id}.
+    service_manager -> report_generator: Request report for test with {test_log_id}.
+    activate report_generator
+    report_generator -> dtl: Get entry for test log with {test_log_id}.
+    dtl --> report_generator: Entry for test log, {test_log_id, test_metadata}.
+    report_generator -> dt: Get test information for test with {test_id}.
+    dt --> report_generator: Test metadata, {test_id, test_metadata}.
+    report_generator -> report_generator: Generate report.
+    report_generator --> service_manager: Report, {report}.
+    deactivate report_generator
+    service_manager --> web_ui: Report, {report}.
+    web_ui --> user: Report for selected test.
+else User has selected a filtered list of tests
+    user -> web_ui: Request reports for tests with {filter}[].
+    web_ui -> service_manager: Request reports for tests with {filter}[].
+    service_manager -> report_generator: Request reports for test with {filter}[].
+    activate report_generator
+    report_generator -> dt: Get all tests where fields take the values {filter}[].
+    dt --> report_generator: Tests with specified parameters, {test_id, test_metadata}[].
+    loop For each {test_id} in the tests returned.
+        report_generator -> dtl: Get all tests with {test_id}.
+        dtl --> report_generator: Tests with {test_id}, {test_log_id, test_metadata}[].
+    end loop
+    loop For each test log
+        report_generator -> report_generator: Generate report.
+    end loop
+    report_generator --> service_manager: Reports, {report}[].
+    deactivate report_generator
+    service_manager --> web_ui: Reports, {report}[].
+    web_ui --> user: Reports for selected tests.
+end
+== Report Exportation ==
+user -> web_ui: Export report with {test_log_id} to PDF.
+web_ui -> service_manager: Export report with {test_log_id} to PDF.
+service_manager -> report_generator: Export report with {test_log_id} to PDF.
+activate report_generator
+report_generator -> dtl: Get test metadata for {test_log_id}.
+dtl --> report_generator: {test_metadata}.
+report_generator -> report_generator: Generate PDF and populate using data from {test_metadata}.
+report_generator --> service_manager: Generated PDF, {PDF}.
+deactivate report_generator
+service_manager --> web_ui: Generated PDF, {PDF}.
+web_ui --> user: Generated PDF, {PDF}. Initiating download.
+note right
+Downloads using browser API. The following
+message is from the user's browser to the actual user.
+end note
+user -> user: Download completed.
+@enduml

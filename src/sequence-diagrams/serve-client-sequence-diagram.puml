@@ -1,0 +1,72 @@
+@startuml
+!pragma teoz true
+/'Defines the protocol when a user logs in, and then is served with data that is associated with their client profile. '/
+/'author: Luvai Cutlerywala <luvaidc@gmail.com>'/
+
+/'Define the actors and participants.'/
+actor User as user
+
+box UI
+    participant "Web UI" as web_ui
+    participant "Mobile App" as mobile_app
+end box
+
+box Backend
+    control "Service Manager" as service_manager
+
+    box Listener
+        queue "Listener\nQueue" as listener_queue
+        participant "Listener" as listener
+    end box
+
+    participant "Scheduler" as scheduler
+    participant "Deliverability\nTest" as deliverability_test
+    participant "Deliverability\nTest Log" as deliverability_test_log
+    participant "Messaging\nService" as messenger
+    participant "Deliverability\nTest Phones" as deliverability_test_phones
+    participant "Report\nGeneration Service" as report_generator
+    participant "Authentication\nService" as auth
+end box
+
+box Database
+    database "deliverability_test" as dt
+    database "deliverability_\ntest_logs" as dtl
+    database "deliverability_\ntest_phones" as dtp
+    database clients as clients
+    database clients_log as cl
+end box
+
+box "Broker API"
+    participant "Bandwidth API" as broker_api
+end box
+
+user -> web_ui: Load available phone numbers to run test.
+web_ui -> service_manager: Load available phone numbers to client with {client_id}
+service_manager -> auth: Is {client_id} admin?
+activate auth
+auth -> clients: Get client data with {client_id}
+clients --> auth: Client data with {client_id}
+auth -> auth: isClientAdmin()
+note left
+This is an internal method in the Authentication Service.
+end note
+auth --> service_manager: User permissions
+deactivate auth
+alt Client is admin
+    service_manager -> deliverability_test_phones: Return all phone numbers
+    activate deliverability_test_phones
+    deliverability_test_phones -> dtp: Get all test phone numbers
+    dtp --> deliverability_test_phones: All test phone numbers {phone_numbers}
+    deliverability_test_phones --> service_manager: All test phone numbers {phone_numbers}
+    deactivate deliverability_test_phones
+else Client is not admin
+   service_manager -> deliverability_test_phones: Return all phone numbers with {client_id}
+       activate deliverability_test_phones
+       deliverability_test_phones -> dtp: Get all test phone numbers with {client_id}
+       dtp --> deliverability_test_phones: All test phone numbers {phone_numbers} with {client_id}
+       deliverability_test_phones --> service_manager: All test phone numbers {phone_numbers} with {client_id}
+       deactivate deliverability_test_phones
+end
+service_manager --> web_ui: All available phone numbers, {phone_numbers}
+web_ui --> user: Available {phone_numbers}
+@enduml
