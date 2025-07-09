@@ -12,7 +12,6 @@ box Backend
 box Service Manager
 participant "External API" as ext
 control "Service Manager" as sm
-participant "Service API" as api
 end box
 participant "Deliverability Test Logs" as dtl
 database deliverability_test_logs as db
