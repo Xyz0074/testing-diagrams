@@ -7,7 +7,6 @@ box Backend
 box Service Manager
 participant "External API" as ext
 control "Service Manager" as ServiceManager
-participant "Service API" as api
 end box
 participant "Deliverability Test" as DeliverabilityTest
 participant "Deliverability Test Log" as DeliverabilityTestLog
@@ -39,17 +38,14 @@ AuthService -> AuthService : Check User details
 
 alt User exists
     alt User details are correct
-        AuthService --> api: User has valid details
-        api->ServiceManager: User has valid details
+        AuthService --> ServiceManager: User has valid details
         ServiceManager --> WebUI: Logged in
     else User details are incorrect
-        AuthService --> api : User has invalid details
-        api->ServiceManager:User has invalid details
+        AuthService --> ServiceManager : User has invalid details
         ServiceManager -> User : Please enter the correct details
     end
 else User does not exist
-    AuthService --> api : User does not exist
-    api->ServiceManager:User does not exist
+    AuthService --> ServiceManager: User does not exist
     deactivate AuthService
     ServiceManager -> User : No User found
 end
